@@ -1,0 +1,63 @@
+.modal-backdrop { position: fixed; inset: 0; z-index: 8; display: grid; place-items: end center; padding: 16px; background: rgba(29, 17, 31, .4); backdrop-filter: blur(5px); }
+.withdrawal-modal { width: min(100%, 480px); background: #fff; color: #25283a; border-radius: 28px; padding: 26px 22px 22px; position: relative; box-shadow: 0 25px 70px rgba(31, 12, 34, .25); animation: modal-rise .25s ease-out; max-height: 90vh; overflow-y: auto; }
+.modal-close { position: absolute; right: 17px; top: 14px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f5f0f6; color: #6b6270; font-size: 25px; line-height: 1; z-index: 2; }
+.modal-icon { width: 46px; height: 46px; border-radius: 15px; background: #f3e1ed; color: #8d226b; display: grid; place-items: center; }
+.withdrawal-modal h2 { margin: 18px 0 8px; font-size: 23px; }
+.withdrawal-modal h3 { font: 700 18px 'Plus Jakarta Sans', sans-serif; margin: 14px 0 12px; }
+.modal-copy { color: #737789; line-height: 1.5; font-size: 13px; margin: 0 0 21px; max-width: 380px; }
+.withdrawal-form { display: grid; gap: 14px; }
+.withdrawal-form label { display: grid; gap: 8px; color: #3b3f50; font-size: 13px; font-weight: 700; }
+.withdrawal-form input { width: 100%; border: 1px solid #e4dfeb; background: #fbfafd; color: #282b3c; border-radius: 13px; padding: 14px 15px; outline: none; font-size: 16px; }
+.withdrawal-form input:focus { border-color: #a52877; box-shadow: 0 0 0 4px rgba(165,40,119,.1); }
+.review-notice { border-left: 3px solid #a52877; background: #faf1f7; color: #6f4262; padding: 11px 12px; margin: 0; font-size: 12px; line-height: 1.45; }
+.withdrawal-message { background: #e6f6ed; color: #176c49; border-radius: 11px; padding: 11px 12px; margin: 0; font-size: 12px; line-height: 1.45; }
+.withdrawal-message.error-message { background: #fce8e8; color: #c92020; }
+.error-icon { color: #c92020; }
+@keyframes modal-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 600px) { .modal-backdrop { place-items: center; } .withdrawal-modal { padding: 31px 30px 27px; } }
+
+/* Confirmation / success screens */
+.confirm-screen { display: flex; flex-direction: column; gap: 16px; }
+.confirm-recipient { display: flex; align-items: center; gap: 12px; background: #f8f3f9; border-radius: 16px; padding: 14px 16px; }
+.confirm-recipient svg { color: #8d226b; flex: 0 0 auto; }
+.confirm-recipient strong { display: block; font: 700 15px 'Plus Jakarta Sans', sans-serif; }
+.confirm-recipient small { color: #8a8e9c; font-size: 12px; }
+.confirm-details { background: #faf7fb; border-radius: 16px; padding: 4px 16px; }
+.confirm-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0ecef; gap: 12px; }
+.confirm-row:last-child { border-bottom: 0; }
+.confirm-row span { color: #8a8e9c; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; flex: 0 0 auto; }
+.confirm-row strong { font: 700 14px 'Plus Jakarta Sans', sans-serif; text-align: right; }
+.confirm-actions { display: flex; gap: 10px; }
+.confirm-actions .auth-submit { flex: 1; }
+.success-icon { display: grid; place-items: center; color: #1c9162; margin: 8px 0; }
+
+/* Method grid for 10 options */
+.method-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 420px) { .method-options-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* Send action cards */
+.send-actions { display: grid; gap: 14px; }
+.send-action-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; background: rgba(255,255,255,.9); border: 0; border-radius: 22px; padding: 22px; box-shadow: 0 6px 18px rgba(80,41,83,.04); text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
+.send-action-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(80,41,83,.08); }
+.send-action-card strong { font: 700 17px 'Plus Jakarta Sans', sans-serif; color: #1e2237; }
+.send-action-card small { color: #8a8e9c; font-size: 13px; line-height: 1.4; }
+.send-action-card .quick-icon { width: 52px; height: 52px; border-radius: 16px; }
+
+/* Dark mode for new elements */
+.dark-mode .confirm-recipient, .dark-mode .confirm-details { background: rgba(65,46,66,.9); }
+.dark-mode .confirm-row { border-color: #4a384d; }
+.dark-mode .confirm-row span { color: #b7acb8; }
+.dark-mode .send-action-card { background: rgba(48,34,49,.92); }
+.dark-mode .send-action-card strong { color: #f9f4f8; }
+.dark-mode .withdrawal-modal { background: #2a1f2b; color: #f9f4f8; }
+.dark-mode .modal-close { background: rgba(65,46,66,.9); color: #d4c9d5; }
+.dark-mode .withdrawal-form input { background: rgba(65,46,66,.9); border-color: #4a384d; color: #f9f4f8; }
+.dark-mode .review-notice { background: rgba(65,46,66,.9); color: #d4c9d5; }
+
+/* Spinner animation for loading indicators */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
+
+/* Balance hint in transfer form */
+.balance-hint { font-size: 12px; color: #8a8e9c; font-weight: 600; padding: 8px 12px; background: #f8f3f9; border-radius: 10px; }
+.dark-mode .balance-hint { background: rgba(65,46,66,.9); color: #b7acb8; }
