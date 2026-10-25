@@ -95,6 +95,10 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
   const cardIsActive = card.status === 'active' && activationStatus === 'approved';
   const lastFour = card.last4 ?? (card.card_number ? card.card_number.replace(/\D/g, '').slice(-4) : null);
   const maskedNumber = `•••• •••• •••• ${lastFour || '••••'}`;
+  const rawCardNumber = (card.card_number ?? '').replace(/\D/g, '');
+  const displayCardNumber = rawCardNumber.length >= 12
+    ? (rawCardNumber.match(/.{1,4}/g) ?? []).join(' ')
+    : maskedNumber;
 
   return (
     <div className="card-panel">
@@ -106,7 +110,7 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
             <div className="vc-chip" aria-label="EMV chip"><span /><span /><span /><span /></div>
           </div>
         </div>
-        <div className="vc-number" aria-label="Masked card number">{maskedNumber}</div>
+        <div className="vc-number" aria-label="Card number">{displayCardNumber}</div>
         <div className="vc-bottom">
           <div className="vc-holder">
             <span className="vc-label">Cardholder</span>
@@ -114,7 +118,7 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
           </div>
           <div className="vc-expiry">
             <span className="vc-label">Valid thru</span>
-            <strong>••/••</strong>
+            <strong>05/2030</strong>
           </div>
           <div className="vc-cvv-area">
             <span className="vc-label">CVV</span>
@@ -129,9 +133,10 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
       </div>
 
       <div className="card-details">
-        <div className="card-detail-row"><span>Card number</span><strong>{maskedNumber}</strong></div>
+        <div className="card-detail-row"><span>Card number</span><strong>{displayCardNumber}</strong></div>
         <div className="card-detail-row"><span>Status</span><strong className={status.cls}>{status.label}</strong></div>
-        <div className="card-detail-row"><span>Cardholder</span><strong>{displayName}</strong></div>\n        <div className="card-detail-row"><span>CVV</span><strong className="cvv-detail-locked"><Lock size={13} /> Locked</strong></div>
+        <div className="card-detail-row"><span>Cardholder</span><strong>{displayName}</strong></div>
+        <div className="card-detail-row"><span>CVV</span><strong className="cvv-detail-locked"><Lock size={13} /> Locked</strong></div>
         <div className="card-detail-row"><span>Issued</span><strong>{formatDate(card.created_at)}</strong></div>
       </div>
 
