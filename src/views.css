@@ -326,3 +326,77 @@
 .dark-mode .card-activate-btn { background: linear-gradient(125deg, #6a2350, #4a1a3a); }
 .dark-mode .card-preview-label { background: rgba(65,46,66,.9); color: #d4c088; }
 .dark-mode .card-confirm-msg { background: rgba(28,122,60,.15); }
+
+
+/* Refined debit-card presentation */
+.virtual-card {
+  min-height: 226px;
+  padding: 22px 24px 20px;
+  gap: 17px;
+  border: 1px solid rgba(255,255,255,.18);
+  background:
+    radial-gradient(ellipse at 92% 8%, rgba(255,255,255,.15), transparent 34%),
+    linear-gradient(125deg, #171b35 0%, #292b55 48%, #424d87 100%);
+  box-shadow: 0 18px 38px rgba(23, 27, 53, .28), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.virtual-card::before {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -90px;
+  bottom: -145px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(255,255,255,.025), 0 0 0 44px rgba(255,255,255,.02);
+}
+.virtual-card::after { top: -58px; right: 38%; width: 150px; height: 150px; }
+.vc-top-right { display: flex; align-items: center; gap: 18px; }
+.vc-chip {
+  width: 39px;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid rgba(92,72,30,.45);
+  background: linear-gradient(135deg, #f2e2b5, #c7a75a);
+  position: relative;
+}
+.vc-chip span { border: 1px solid rgba(104,81,39,.42); }
+.vc-chip span:nth-child(1) { border-top: 0; border-left: 0; }
+.vc-chip span:nth-child(2) { border-top: 0; border-right: 0; }
+.vc-chip span:nth-child(3) { border-bottom: 0; border-left: 0; }
+.vc-chip span:nth-child(4) { border-bottom: 0; border-right: 0; }
+.vc-contactless { width: 18px; height: 22px; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+.vc-contactless span { display: block; border: 1.7px solid rgba(255,255,255,.82); border-top-color: transparent; border-bottom-color: transparent; border-left-color: transparent; border-radius: 50%; height: 8px; flex: 0 0 5px; }
+.vc-contactless span:nth-child(2) { height: 14px; flex-basis: 8px; }
+.vc-contactless span:nth-child(3) { height: 20px; flex-basis: 10px; }
+.vc-number { font-size: clamp(15px, 2.4vw, 19px); letter-spacing: 2px; white-space: nowrap; }
+.vc-bottom { gap: 12px; padding-right: 48px; }
+.vc-holder { min-width: 0; flex: 1; }
+.vc-holder strong { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; letter-spacing: .5px; }
+.vc-expiry strong { font: 600 12px 'DM Sans', sans-serif; letter-spacing: 1px; }
+.vc-cvv-area { flex: 0 0 auto; }
+.vc-cvv-locked { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.9); }
+.vc-card-network { position: absolute; right: 23px; bottom: 19px; font: italic 800 13px 'Plus Jakarta Sans', sans-serif; letter-spacing: 1px; color: rgba(255,255,255,.9); }
+.vc-status-badge { align-self: flex-start; margin-top: -4px; }
+.cvv-detail-locked { display: inline-flex; align-items: center; gap: 5px; color: #8a6b20; }
+@media (max-width: 420px) {
+  .virtual-card { min-height: 210px; padding: 18px 16px; gap: 15px; border-radius: 17px; }
+  .vc-brand { font-size: 18px; }
+  .vc-top-right { gap: 12px; }
+  .vc-bottom { padding-right: 0; gap: 8px; flex-wrap: wrap; }
+  .vc-holder strong { font-size: 11px; }
+  .vc-expiry strong { font-size: 11px; }
+  .vc-label { font-size: 8px; }
+  .vc-number { font-size: 14px; letter-spacing: 1.3px; }
+  .vc-card-network { right: 16px; bottom: 16px; font-size: 11px; }
+}
+
+.virtual-card.pending,
+.virtual-card.active {
+  background:
+    radial-gradient(ellipse at 92% 8%, rgba(255,255,255,.15), transparent 34%),
+    linear-gradient(125deg, #171b35 0%, #292b55 48%, #424d87 100%);
+}
