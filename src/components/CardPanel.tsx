@@ -12,6 +12,12 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmMsg, setConfirmMsg] = useState('');
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [generatedCardNumber] = useState(() => {
+    const digits = Array.from({ length: 15 }, () => Math.floor(Math.random() * 10));
+    digits[0] = 5;
+    return [...digits, digits.reduce((sum, digit) => sum + digit, 0) % 10].join('').replace(/(\d{4})(?=\d)/g, '$1 ');
+  });
 
   const loadData = useCallback(async () => {
     const { data: cardData, error: cardError } = await supabase
@@ -93,44 +99,60 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
   const status = statusConfig[activationStatus];
   const StatusIcon = status.Icon;
   const cardIsActive = card.status === 'active' && activationStatus === 'approved';
-  const lastFour = card.last4 ?? (card.card_number ? card.card_number.replace(/\D/g, '').slice(-4) : null);
-  const maskedNumber = `•••• •••• •••• ${lastFour || '••••'}`;
-  const rawCardNumber = (card.card_number ?? '').replace(/\D/g, '');
-  const displayCardNumber = rawCardNumber.length >= 12
-    ? (rawCardNumber.match(/.{1,4}/g) ?? []).join(' ')
-    : maskedNumber;
+  const displayCardNumber = generatedCardNumber;
 
   return (
     <div className="card-panel">
-      <div className={`virtual-card ${cardIsActive ? 'active' : 'pending'}`}>
-        <div className="vc-top">
-          <div className="vc-brand">Skrill</div>
-          <div className="vc-top-right">
-            <span className="vc-contactless" aria-label="Contactless payment"><span /><span /><span /></span>
-            <div className="vc-chip" aria-label="EMV chip"><span /><span /><span /><span /></div>
-          </div>
-        </div>
-        <div className="vc-number" aria-label="Card number">{displayCardNumber}</div>
-        <div className="vc-bottom">
-          <div className="vc-holder">
-            <span className="vc-label">Cardholder</span>
-            <strong>{displayName}</strong>
-          </div>
-          <div className="vc-expiry">
-            <span className="vc-label">Valid thru</span>
-            <strong>05/2030</strong>
-          </div>
-          <div className="vc-cvv-area">
-            <span className="vc-label">CVV</span>
-            <div className="vc-cvv-locked"><Lock size={12} /> Locked</div>
-          </div>
-        </div>
-        <div className="vc-card-network" aria-label="Card network">CARD</div>
-        <div className="vc-status-badge">
-          <StatusIcon size={14} className={activationStatus === 'pending' ? 'spin' : ''} />
-          <span>{status.label}</span>
-        </div>
-      </div>
+      <button
+        type="button"
+        className={`virtual-card-flipper ${isCardFlipped ? 'is-flipped' : ''}`}
+        onClick={() => setIsCardFlipped((flipped) => !flipped)}
+        aria-label={isCardFlipped ? 'Show front of card' : 'Show back of card'}
+        aria-pressed={isCardFlipped}
+      >
+        <span className={`virtual-card ${cardIsActive ? 'active' : 'pending'} vc-face vc-front`}>
+          <span className="vc-top">
+            <span className="vc-brand">Skrill Bank</span>
+            <span className="vc-top-right">
+              <span className="vc-contactless" aria-label="Contactless payment"><span /><span /><span /></span>
+              <span className="vc-chip" aria-label="EMV chip"><span /><span /><span /><span /></span>
+            </span>
+          </span>
+          <span className="vc-number" aria-label="Card number">{displayCardNumber}</span>
+          <span className="vc-bottom">
+            <span className="vc-holder">
+              <span className="vc-label">Cardholder</span>
+              <strong>{displayName}</strong>
+            </span>
+            <span className="vc-expiry">
+              <span className="vc-label">Valid thru</span>
+              <strong>05/2030</strong>
+            </span>
+          </span>
+          <span className="vc-card-network" aria-label="Mastercard">
+            <span className="mastercard-mark"><i /><i /></span>
+            <span className="mastercard-word">mastercard</span>
+          </span>
+          <span className="vc-status-badge">
+            <StatusIcon size={14} className={activationStatus === 'pending' ? 'spin' : ''} />
+            <span>{status.label}</span>
+          </span>
+          <span className="vc-flip-hint">Tap card to flip</span>
+        </span>
+        <span className="virtual-card vc-face vc-back">
+          <span className="vc-back-brand">SKRILL BANK</span>
+          <span className="vc-magnetic-stripe" />
+          <span className="vc-signature-row">
+            <span className="vc-signature-strip">{displayName.toUpperCase()}</span>
+            <span className="vc-cvv-back">
+              <span className="vc-label">CVV</span>
+              <span className="vc-cvv-locked"><Lock size={13} /> Locked</span>
+            </span>
+          </span>
+          <span className="vc-back-footer">CVV access is locked</span>
+          <span className="vc-flip-hint">Tap card to flip back</span>
+        </span>
+      </button>
 
       <div className="card-details">
         <div className="card-detail-row"><span>Card number</span><strong>{displayCardNumber}</strong></div>
