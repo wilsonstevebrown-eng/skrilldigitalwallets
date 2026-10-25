@@ -412,3 +412,60 @@
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 2px rgba(20, 0, 45, .18);
 }
+
+
+/* Interactive Mastercard-style card */
+.virtual-card-flipper {
+  display: block; position: relative; width: 100%; aspect-ratio: 1.586; min-height: 220px;
+  padding: 0; border: 0; border-radius: 20px; background: transparent; color: #fff;
+  cursor: pointer; perspective: 1200px; text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.virtual-card-flipper:focus-visible { outline: 3px solid #c05aa1; outline-offset: 4px; }
+.virtual-card-flipper .vc-face {
+  position: absolute; inset: 0; box-sizing: border-box; width: 100%; height: 100%; min-height: 0;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+  padding: clamp(16px, 3.4vw, 25px); border-radius: 20px; overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  transition: transform .68s cubic-bezier(.2,.72,.2,1);
+  background: radial-gradient(ellipse at 90% 8%, rgba(255,255,255,.2), transparent 34%),
+    linear-gradient(125deg, #4a103a 0%, #862166 52%, #c05aa1 100%);
+  box-shadow: 0 18px 38px rgba(134,33,102,.28), inset 0 1px 0 rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.2); color: #fff; font-style: normal;
+}
+.virtual-card-flipper .vc-front { transform: rotateY(0deg); }
+.virtual-card-flipper .vc-back { transform: rotateY(180deg); background: linear-gradient(135deg,#4a103a,#862166 65%,#9d4383); }
+.virtual-card-flipper.is-flipped .vc-front { transform: rotateY(-180deg); }
+.virtual-card-flipper.is-flipped .vc-back { transform: rotateY(0deg); }
+.virtual-card-flipper .vc-top, .virtual-card-flipper .vc-bottom { display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1; }
+.virtual-card-flipper .vc-brand { font-size: clamp(16px,2.4vw,21px); font-weight:800; letter-spacing:.3px; }
+.virtual-card-flipper .vc-top-right { display:flex; align-items:center; gap:14px; }
+.virtual-card-flipper .vc-number { display:block; position:relative; z-index:1; font-size:clamp(14px,2.5vw,20px); letter-spacing:clamp(1px,.25vw,2.5px); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.virtual-card-flipper .vc-bottom { gap:12px; padding-right:95px; align-items:flex-end; }
+.virtual-card-flipper .vc-holder { min-width:0; flex:1; }
+.virtual-card-flipper .vc-holder strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-transform:uppercase; font-size:clamp(10px,1.7vw,13px); }
+.virtual-card-flipper .vc-expiry strong { font-size:12px; white-space:nowrap; }
+.virtual-card-flipper .vc-card-network { position:absolute; right:20px; bottom:20px; display:flex; flex-direction:column; align-items:center; gap:1px; }
+.mastercard-mark { display:flex; align-items:center; justify-content:center; position:relative; width:48px; height:30px; }
+.mastercard-mark i { display:block; width:28px; height:28px; border-radius:50%; background:#eb001b; position:absolute; left:2px; }
+.mastercard-mark i + i { left:18px; background:#f79e1b; mix-blend-mode:screen; }
+.mastercard-word { font:600 8px Arial,sans-serif; letter-spacing:-.2px; color:#fff; }
+.virtual-card-flipper .vc-status-badge { position:relative; z-index:1; align-self:flex-start; margin-top:0; font-size:10px; }
+.virtual-card-flipper .vc-flip-hint { position:absolute; right:18px; top:50%; transform:translateY(-50%); z-index:1; font-size:9px; color:rgba(255,255,255,.58); opacity:0; transition:opacity .2s ease; }
+.virtual-card-flipper:hover .vc-flip-hint, .virtual-card-flipper:focus-visible .vc-flip-hint { opacity:1; }
+.virtual-card-flipper .vc-back-brand { position:relative; z-index:1; font-weight:800; font-size:12px; letter-spacing:1.2px; }
+.virtual-card-flipper .vc-magnetic-stripe { display:block; flex:0 0 42px; margin:0 calc(clamp(16px,3.4vw,25px) * -1); background:linear-gradient(180deg,#15121a,#08070a 55%,#201a23); }
+.virtual-card-flipper .vc-signature-row { display:flex; align-items:center; gap:12px; width:100%; position:relative; z-index:1; }
+.virtual-card-flipper .vc-signature-strip { flex:1; min-width:0; height:32px; display:flex; align-items:center; padding:0 10px; background:repeating-linear-gradient(0deg,#e9e2df 0,#e9e2df 3px,#d7cdca 3px,#d7cdca 5px); color:#5e5260; font:italic 10px Arial,sans-serif; overflow:hidden; white-space:nowrap; }
+.virtual-card-flipper .vc-cvv-back { display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+.virtual-card-flipper .vc-cvv-back .vc-label { opacity:.85; }
+.virtual-card-flipper .vc-back-footer { position:relative; z-index:1; font-size:10px; color:rgba(255,255,255,.75); }
+@media (max-width:420px) {
+ .virtual-card-flipper { min-height:200px; }
+ .virtual-card-flipper .vc-face { border-radius:17px; padding:16px; gap:9px; }
+ .virtual-card-flipper .vc-bottom { padding-right:78px; gap:8px; }
+ .virtual-card-flipper .vc-number { font-size:13px; letter-spacing:1px; }
+ .virtual-card-flipper .vc-card-network { right:14px; bottom:14px; }
+ .mastercard-mark { transform:scale(.84); transform-origin:center; }
+ .virtual-card-flipper .vc-magnetic-stripe { margin:0 -16px; flex-basis:35px; }
+ .virtual-card-flipper .vc-signature-strip { height:27px; }
+}
