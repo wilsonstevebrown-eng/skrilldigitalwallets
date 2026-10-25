@@ -51,8 +51,42 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
   const [editName, setEditName] = useState(profile.display_name);
   const [showSettingsForm, setShowSettingsForm] = useState(false);
   const [displayName, setDisplayName] = useState(profile.display_name);
+  const supportedCurrencies = ['USD', 'GBP', 'CAD', 'AUD', 'EUR'] as const;
+  const [displayCurrency, setDisplayCurrency] = useState(() => {
+    const savedCurrency = localStorage.getItem('skrill-display-currency');
+    return supportedCurrencies.includes(savedCurrency as typeof supportedCurrencies[number]) ? savedCurrency as typeof supportedCurrencies[number] : 'USD';
+  });
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ USD: 1 });
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState('');
+  const [ratesUnavailable, setRatesUnavailable] = useState(false);
+  const currencyNames: Record<string, string> = { USD: 'United States Dollar', GBP: 'British Pound Sterling', CAD: 'Canadian Dollar', AUD: 'Australian Dollar', EUR: 'Euro' };
+  const currencyFlags: Record<string, string> = { USD: '🇺🇸', GBP: '🇬🇧', CAD: '🇨🇦', AUD: '🇦🇺', EUR: '🇪🇺' };
+
+  const displayMoney = (amount: number) => {
+    const currency = ratesUnavailable && displayCurrency !== 'USD' ? 'USD' : displayCurrency;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount * (exchangeRates[currency] ?? 1));
+  };
 
   const showNotice = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2800); };
+
+  useEffect(() => {
+    let active = true;
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then((response) => { if (!response.ok) throw new Error('Exchange rates unavailable'); return response.json(); })
+      .then((payload: { result?: string; rates?: Record<string, number>; time_last_update_utc?: string }) => {
+        if (!active || payload.result !== 'success' || !payload.rates) throw new Error('Exchange rates unavailable');
+        setExchangeRates({ USD: 1, ...payload.rates });
+        setRatesUpdatedAt(payload.time_last_update_utc ?? '');
+        setRatesUnavailable(false);
+      })
+      .catch(() => { if (active) setRatesUnavailable(true); });
+    return () => { active = false; };
+  }, []);
+
+  const changeDisplayCurrency = (currency: string) => {
+    setDisplayCurrency(currency);
+    localStorage.setItem('skrill-display-currency', currency);
+  };
 
   const loadData = useCallback(async () => {
     const { data: txData, error: txError } = await supabase
@@ -199,16 +233,16 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
             </section>
 
             <section className="balance-card">
-              <div className="balance-topline"><span>Available balance</span><div className="currency-pill"><span>Default</span><strong>USD</strong></div></div>
+              <div className="balance-topline"><span>Available balance</span><label className="currency-pill"><span>Display currency</span><select aria-label="Display currency" value={displayCurrency} onChange={(event) => changeDisplayCurrency(event.target.value)}>{supportedCurrencies.map((currency) => <option key={currency} value={currency}>{currencyFlags[currency]} {currency}</option>)}</select></label></div>
               <div className="balance-amount-row">
-                <strong>{balanceVisible ? formatCurrency(balance) : '••••••••••'}</strong>
+                <strong>{balanceVisible ? displayMoney(balance) : '••••••••••'}</strong>
                 <button className="visibility-button" onClick={() => setBalanceVisible((value) => !value)} aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}>{balanceVisible ? <EyeOff size={22} /> : <CircleDollarSign size={22} />}</button>
               </div>
-              <div className="currency-name"><span className="currency-flag">US</span> United States Dollar</div>
+              <div className="currency-name"><span className="currency-flag">{currencyFlags[displayCurrency] || '💱'}</span> {currencyNames[displayCurrency] || displayCurrency} · converted display estimate</div>{ratesUnavailable && <small className="currency-rate-note">Exchange rates are temporarily unavailable. Showing the original USD amount.</small>}{!ratesUnavailable && ratesUpdatedAt && displayCurrency !== 'USD' && <small className="currency-rate-note">Rates updated {ratesUpdatedAt}. Display only; your stored account balance remains USD.</small>}
               <div className="balance-divider" />
               <div className="monthly-summary">
-                <div><span>In this month</span><strong>+{formatCurrency(monthlyIn)}</strong></div>
-                <div><span>Out this month</span><strong>-{formatCurrency(monthlyOut)}</strong></div>
+                <div><span>In this month</span><strong>+{displayMoney(monthlyIn)}</strong></div>
+                <div><span>Out this month</span><strong>-{displayMoney(monthlyOut)}</strong></div>
               </div>
             </section>
 
@@ -232,8 +266,8 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                     <div className="activity-item" key={req.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span className="activity-icon soft"><ArrowDownLeft size={20} /></span>
-                        <span className="activity-copy"><strong>Payment request</strong><small>{formatCurrency(req.amount)}{req.memo ? ' · ' + req.memo : ''}</small></span>
-                        <span className="activity-value"><strong>{formatCurrency(req.amount)}</strong></span>
+                        <span className="activity-copy"><strong>Payment request</strong><small>{displayMoney(req.amount)}{req.memo ? ' · ' + req.memo : ''}</small></span>
+                        <span className="activity-value"><strong>{displayMoney(req.amount)}</strong></span>
                       </div>
                       <div className="admin-w-actions" style={{ justifyContent: 'flex-end' }}>
                         <button className="admin-action-btn approve" disabled={reqBusy === req.id} onClick={() => handleApproveRequest(req.id)}>
@@ -260,7 +294,7 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                     </span>
                     <span className="activity-copy"><strong>{tx.description}</strong><small>{formatDate(tx.created_at)}</small></span>
                     <span className="activity-value">
-                      <strong className={tx.type === 'credit' ? 'positive' : ''}>{tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}</strong>
+                      <strong className={tx.type === 'credit' ? 'positive' : ''}>{tx.type === 'credit' ? '+' : '-'}{displayMoney(tx.amount)}</strong>
                     </span>
                   </div>
                 ))}
@@ -282,10 +316,10 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                         <span className="activity-icon soft"><ArrowDownLeft size={20} /></span>
                         <span className="activity-copy">
                           <strong>Request from {outgoingRequests.find((r) => r.id === req.id) ? 'You' : 'User'}</strong>
-                          <small>{formatCurrency(req.amount)}{req.memo ? ' · ' + req.memo : ''} · {formatDate(req.created_at)}</small>
+                          <small>{displayMoney(req.amount)}{req.memo ? ' · ' + req.memo : ''} · {formatDate(req.created_at)}</small>
                         </span>
                         <span className="activity-value">
-                          <strong>{formatCurrency(req.amount)}</strong>
+                          <strong>{displayMoney(req.amount)}</strong>
                           <span className={`status-badge ${req.status}`}>{formatStatus(req.status)}</span>
                         </span>
                       </div>
@@ -316,10 +350,10 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                         <span className="activity-icon soft"><ArrowUpRight size={20} /></span>
                         <span className="activity-copy">
                           <strong>Request to {req.to_user_id}</strong>
-                          <small>{formatCurrency(req.amount)}{req.memo ? ' · ' + req.memo : ''} · {formatDate(req.created_at)}</small>
+                          <small>{displayMoney(req.amount)}{req.memo ? ' · ' + req.memo : ''} · {formatDate(req.created_at)}</small>
                         </span>
                         <span className="activity-value">
-                          <strong>{formatCurrency(req.amount)}</strong>
+                          <strong>{displayMoney(req.amount)}</strong>
                           <span className={`status-badge ${req.status}`}>{formatStatus(req.status)}</span>
                         </span>
                       </div>
@@ -354,8 +388,8 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                           <small>{tr.reference} · {tr.memo || 'No memo'} · {formatDate(tr.created_at)} · {formatStatus(tr.status)}</small>
                         </span>
                         <span className="activity-value">
-                          <strong className={isSender ? '' : 'positive'}>{isSender ? '-' : '+'}{formatCurrency(tr.amount)}</strong>
-                          <small>Fee {formatCurrency(tr.fee)}</small>
+                          <strong className={isSender ? '' : 'positive'}>{isSender ? '-' : '+'}{displayMoney(tr.amount)}</strong>
+                          <small>Fee {displayMoney(tr.fee)}</small>
                         </span>
                       </div>
                     );
@@ -375,7 +409,7 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                   </span>
                   <span className="activity-copy"><strong>{tx.description}</strong><small>{formatDate(tx.created_at)}</small></span>
                   <span className="activity-value">
-                    <strong className={tx.type === 'credit' ? 'positive' : ''}>{tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}</strong>
+                    <strong className={tx.type === 'credit' ? 'positive' : ''}>{tx.type === 'credit' ? '+' : '-'}{displayMoney(tx.amount)}</strong>
                   </span>
                 </div>
               ))}
@@ -393,7 +427,7 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
                     <small>{w.reference} · {formatDate(w.created_at)} · {w.destination}</small>
                   </span>
                   <span className="activity-value">
-                    <strong>-{formatCurrency(w.amount)}</strong>
+                    <strong>-{displayMoney(w.amount)}</strong>
                     <span className={`status-badge ${w.status}`}>{formatStatus(w.status)}</span>
                   </span>
                 </div>
@@ -458,7 +492,7 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
             <div className="profile-details">
               <div className="profile-row"><span>Customer ID</span><strong>{profile.account_id}</strong></div>
               <div className="profile-row"><span>Account role</span><strong>User since {new Date(profile.created_at || '2026-01-01').getFullYear()}</strong></div>
-              <div className="profile-row"><span>Available balance</span><strong>{formatCurrency(balance)}</strong></div>
+              <div className="profile-row"><span>Available balance</span><strong>{displayMoney(balance)}</strong></div>
               <div className="profile-row"><span>Email address</span><strong>{session.user.email}</strong></div>
             </div>
 
