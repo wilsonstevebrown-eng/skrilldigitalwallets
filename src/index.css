@@ -78,3 +78,7 @@ h2 { font: 700 20px 'Plus Jakarta Sans', sans-serif; margin: 0; letter-spacing: 
 @media (min-width: 760px) { .dashboard { padding: 42px 48px 55px; } .topbar { margin-bottom: 62px; } .quick-section, .activity-section { margin-top: 45px; } .bottom-nav { border-radius: 24px 24px 0 0; } }
 @media (min-width: 1000px) { .dashboard { display: grid; grid-template-columns: 1fr 1.1fr; column-gap: 55px; align-items: start; } .topbar { grid-column: 1 / -1; } .welcome-section { grid-column: 1; } .balance-card { grid-column: 2; grid-row: 2 / span 3; margin-top: 0; max-width: none; } .quick-section, .activity-section { grid-column: 1; } .activity-section { grid-row: 4; } }
 @media (max-width: 390px) { .dashboard { padding-left: 15px; padding-right: 15px; } .balance-card { padding-left: 19px; padding-right: 19px; } .balance-amount-row > strong { letter-spacing: -2.5px; } .monthly-summary { gap: 8px; } .monthly-summary > div { padding-left: 12px; padding-right: 12px; } }
+
+.currency-pill select { display: block; max-width: 120px; margin: 0 auto; border: 0; outline: none; color: #fff; background: transparent; font: inherit; font-weight: 700; font-size: 16px; text-align: center; cursor: pointer; }
+.currency-pill select option { color: #1f2937; background: #fff; }
+.currency-rate-note { display: block; margin-top: 8px; color: #f5dfea; font-size: 11px; line-height: 1.4; }
