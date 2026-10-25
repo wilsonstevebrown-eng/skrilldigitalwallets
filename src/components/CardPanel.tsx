@@ -93,41 +93,45 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
   const status = statusConfig[activationStatus];
   const StatusIcon = status.Icon;
   const cardIsActive = card.status === 'active' && activationStatus === 'approved';
-  const previewNumber = card.card_number ?? card.card_reference;
+  const lastFour = card.last4 ?? (card.card_number ? card.card_number.replace(/\D/g, '').slice(-4) : null);
+  const maskedNumber = `•••• •••• •••• ${lastFour || '••••'}`;
 
   return (
     <div className="card-panel">
       <div className={`virtual-card ${cardIsActive ? 'active' : 'pending'}`}>
         <div className="vc-top">
           <div className="vc-brand">Skrill</div>
-          <div className="vc-chip" />
+          <div className="vc-top-right">
+            <span className="vc-contactless" aria-label="Contactless payment"><span /><span /><span /></span>
+            <div className="vc-chip" aria-label="EMV chip"><span /><span /><span /><span /></div>
+          </div>
         </div>
-        <div className="vc-number">{previewNumber}</div>
+        <div className="vc-number" aria-label="Masked card number">{maskedNumber}</div>
         <div className="vc-bottom">
           <div className="vc-holder">
             <span className="vc-label">Cardholder</span>
             <strong>{displayName}</strong>
+          </div>
+          <div className="vc-expiry">
+            <span className="vc-label">Valid thru</span>
+            <strong>••/••</strong>
           </div>
           <div className="vc-cvv-area">
             <span className="vc-label">CVV</span>
             <div className="vc-cvv-locked"><Lock size={12} /> Locked</div>
           </div>
         </div>
+        <div className="vc-card-network" aria-label="Card network">CARD</div>
         <div className="vc-status-badge">
           <StatusIcon size={14} className={activationStatus === 'pending' ? 'spin' : ''} />
           <span>{status.label}</span>
         </div>
       </div>
 
-      <div className="card-preview-label">
-        <AlertCircle size={14} />
-        <span>This is a preview card with a test number. Real card details and CVV will only be revealed after a legitimate card issuer issues the card and authorization checks pass.</span>
-      </div>
-
       <div className="card-details">
-        <div className="card-detail-row"><span>Card number</span><strong>{previewNumber}</strong></div>
+        <div className="card-detail-row"><span>Card number</span><strong>{maskedNumber}</strong></div>
         <div className="card-detail-row"><span>Status</span><strong className={status.cls}>{status.label}</strong></div>
-        <div className="card-detail-row"><span>Cardholder</span><strong>{displayName}</strong></div>
+        <div className="card-detail-row"><span>Cardholder</span><strong>{displayName}</strong></div>\n        <div className="card-detail-row"><span>CVV</span><strong className="cvv-detail-locked"><Lock size={13} /> Locked</strong></div>
         <div className="card-detail-row"><span>Issued</span><strong>{formatDate(card.created_at)}</strong></div>
       </div>
 
@@ -152,7 +156,7 @@ export function CardPanel({ userId, displayName }: { userId: string; displayName
           <CheckCircle2 size={18} />
           <div>
             <strong>Card approved.</strong>
-            <p>Your card has been approved by an administrator. A card-issuing provider must still issue the physical/virtual card before real card details and CVV are available.</p>
+            <p>Your card activation has been approved. CVV access remains locked until secure card-provider details are available.</p>
           </div>
         </div>
       )}
