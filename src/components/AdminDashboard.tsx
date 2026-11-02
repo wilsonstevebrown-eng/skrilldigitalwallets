@@ -7,6 +7,7 @@ import {
   type AdminUser, type AdminWithdrawal, type AdminTransfer, type AdminMoneyRequest, type AdminCardActivation, type Profile,
 } from '@/lib/types';
 import { AdminSupportInbox } from '@/components/AdminSupportInbox';
+import { SupportNotificationListener } from '@/components/SupportNotificationListener';
 
 type AdminTab = 'users' | 'withdrawals' | 'transfers' | 'requests' | 'cards' | 'support';
 
@@ -92,6 +93,7 @@ export function AdminDashboard({ session, profile, onLogout }: { session: Sessio
 
   return (
     <main className={isDark ? 'app-shell dark-mode' : 'app-shell'}>
+      <SupportNotificationListener role="admin" />
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <div className="dashboard">
         <header className="topbar">
