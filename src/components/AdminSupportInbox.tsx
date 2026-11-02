@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Headphones, Loader2, Search, Send, UserCheck } from 'lucide-react';
+import { Bell, FileText, Headphones, ImagePlus, Loader2, Paperclip, Search, Send, UserCheck, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDate, formatStatus, type AdminSupportConversation, type SupportMessage } from '@/lib/types';
+import {
+  addSupportAttachmentUrls, MAX_SUPPORT_ATTACHMENT_BYTES, SUPPORT_ATTACHMENT_ACCEPT,
+  uploadSupportAttachment, validateSupportAttachment, type SupportMessageWithAttachment,
+} from '@/lib/supportAttachments';
+import { enableSupportNotifications } from '@/lib/supportNotifications';
 
 type StatusFilter = 'all' | 'open' | 'waiting_for_customer' | 'resolved';
 
@@ -15,7 +20,10 @@ const statusFilters: { value: StatusFilter; label: string }[] = [
 export function AdminSupportInbox({ adminId }: { adminId: string }) {
   const [conversations, setConversations] = useState<AdminSupportConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [messages, setMessages] = useState<SupportMessageWithAttachment[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(true);
@@ -38,7 +46,9 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
   useEffect(() => {
     const channel = supabase.channel('admin-support-inbox')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_conversations' }, () => { void loadConversations(); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, () => { void loadConversations(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload) => {
+        void loadConversations();
+      })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [loadConversations]);
@@ -47,7 +57,7 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
     setIsLoadingMsgs(true);
     const { data, error: msgError } = await supabase.rpc('my_support_messages', { p_conversation_id: convId });
     if (msgError) { setError('Could not load messages.'); setIsLoadingMsgs(false); return; }
-    setMessages((data ?? []) as unknown as SupportMessage[]);
+    setMessages(await addSupportAttachmentUrls((data ?? []) as unknown as SupportMessageWithAttachment[]));
     setIsLoadingMsgs(false);
     void supabase.rpc('mark_conversation_read', { p_conversation_id: convId, p_as_role: 'admin' });
     void loadConversations();
@@ -57,9 +67,10 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
   useEffect(() => {
     if (!selectedId) return;
     const channel = supabase.channel(`admin-support-msgs-${selectedId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${selectedId}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `conversation_id=eq.${selectedId}` }, async (payload) => {
         const newMsg = payload.new as SupportMessage;
-        setMessages((prev) => prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]);
+        const [enriched] = await addSupportAttachmentUrls([newMsg]);
+        setMessages((prev) => prev.some((m) => m.id === enriched.id) ? prev : [...prev, enriched]);
         if (newMsg.sender_role === 'customer') {
           void supabase.rpc('mark_conversation_read', { p_conversation_id: selectedId, p_as_role: 'admin' });
           void loadConversations();
@@ -81,19 +92,30 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
   const handleSend = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = draft.trim();
-    if (!trimmed || !selectedId || isBusy) return;
+    if ((!trimmed && !file) || !selectedId || isBusy) return;
     setIsBusy(true);
-    const { data, error: sendError } = await supabase.rpc('send_support_message', {
-      p_conversation_id: selectedId,
-      p_body: trimmed,
-    });
-    setIsBusy(false);
-    if (sendError) { setError('Could not send your reply.'); return; }
-    const sent = data as SupportMessage;
-    setMessages((prev) => prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]);
-    setDraft('');
     setError('');
-    void loadConversations();
+    try {
+      const attachmentPath = file ? await uploadSupportAttachment(file, selectedId) : null;
+      const { data, error: sendError } = await supabase.rpc('send_support_message', {
+        p_conversation_id: selectedId,
+        p_body: trimmed || (file ? `Attachment: ${file.name}` : ''),
+        p_attachment_path: attachmentPath,
+        p_attachment_name: file?.name ?? null,
+        p_attachment_mime_type: file?.type ?? null,
+      });
+      if (sendError) throw sendError;
+      const [sent] = await addSupportAttachmentUrls([data as SupportMessageWithAttachment]);
+      setMessages((prev) => prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]);
+      setDraft('');
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = '';
+      void loadConversations();
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : 'Could not send your reply.');
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   const handleAssign = async (convId: string) => {
@@ -121,8 +143,11 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
   return (
     <section className="admin-section admin-support-section">
       <div className="section-heading">
-        <h2><Headphones size={20} /> Support Inbox</h2>
+        <h2><Headphones size={20} /> Support Inbox <span className="support-conversation-count">{conversations.length} customer conversations</span></h2>
         {totalUnread > 0 && <span className="tab-badge">{totalUnread}</span>}
+        <button type="button" className="support-notify-btn" onClick={async () => setNotificationsEnabled(await enableSupportNotifications())}>
+          <Bell size={14} /> {notificationsEnabled ? 'Notifications enabled' : 'Enable notifications'}
+        </button>
       </div>
 
       <div className="support-inbox-layout">
@@ -206,7 +231,14 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
                   const isMine = msg.sender_role === 'admin';
                   return (
                     <div key={msg.id} className={`support-msg ${isMine ? 'mine' : 'theirs'}`}>
-                      <div className="support-msg-bubble">{msg.body}</div>
+                      <div className="support-msg-bubble">
+                        {msg.body}
+                        {msg.attachment_url && (
+                          <a className="support-attachment" href={msg.attachment_url} target="_blank" rel="noreferrer">
+                            {msg.attachment_mime_type?.startsWith('image/') ? <img src={msg.attachment_url} alt={msg.attachment_name || 'Support attachment'} /> : <span><FileText size={18} /> {msg.attachment_name || 'Download attachment'}</span>}
+                          </a>
+                        )}
+                      </div>
                       <div className="support-msg-time">{formatDate(msg.created_at)}</div>
                     </div>
                   );
@@ -214,19 +246,29 @@ export function AdminSupportInbox({ adminId }: { adminId: string }) {
                 <div ref={bottomRef} />
               </div>
 
+              {file && <div className="support-file-preview"><Paperclip size={15} /> {file.name} <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span><button type="button" onClick={() => setFile(null)} aria-label="Remove attachment"><X size={15} /></button></div>}
               <form className="support-chat-input-row" onSubmit={handleSend}>
+                <input ref={fileRef} type="file" accept={SUPPORT_ATTACHMENT_ACCEPT} hidden onChange={(event) => {
+                  const selectedFile = event.target.files?.[0];
+                  if (!selectedFile) return;
+                  const validationError = validateSupportAttachment(selectedFile);
+                  if (validationError) { setError(validationError); return; }
+                  setError('');
+                  setFile(selectedFile);
+                }} />
+                <button type="button" className="support-attach-btn" onClick={() => fileRef.current?.click()} disabled={isBusy || selected.status === 'resolved'} aria-label="Attach a file"><ImagePlus size={19} /></button>
                 <input
                   type="text"
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder={selected.status === 'resolved' ? 'This conversation is resolved' : 'Type your reply…'}
                   disabled={isBusy || selected.status === 'resolved'}
-                  required
                 />
-                <button type="submit" className="support-send-btn" disabled={isBusy || !draft.trim() || selected.status === 'resolved'}>
+                <button type="submit" className="support-send-btn" disabled={isBusy || (!draft.trim() && !file) || selected.status === 'resolved'}>
                   {isBusy ? <Loader2 size={18} className="spin" /> : <Send size={18} />}
                 </button>
               </form>
+              <p className="support-upload-hint">Images or PDF · Max {MAX_SUPPORT_ATTACHMENT_BYTES / 1024 / 1024} MB</p>
               {error && <p className="support-chat-error">{error}</p>}
             </>
           )}
