@@ -13,6 +13,7 @@ import { WithdrawalModal } from '@/components/WithdrawalModal';
 import { TransferModal } from '@/components/TransferModal';
 import { RequestModal } from '@/components/RequestModal';
 import { SupportChat } from '@/components/SupportChat';
+import { SupportNotificationListener } from '@/components/SupportNotificationListener';
 import { CardPanel } from '@/components/CardPanel';
 import { BankStatements } from '@/components/BankStatements';
 
@@ -201,6 +202,7 @@ export function Dashboard({ session, profile, onLogout }: { session: Session; pr
 
   return (
     <main className={isDark ? 'app-shell dark-mode' : 'app-shell'}>
+      <SupportNotificationListener role="customer" />
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <div className="dashboard">
         <header className="topbar">
