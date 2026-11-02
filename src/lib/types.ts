@@ -134,6 +134,9 @@ export type SupportMessage = {
   sender_id: string;
   sender_role: 'customer' | 'admin';
   body: string;
+  attachment_path?: string | null;
+  attachment_name?: string | null;
+  attachment_mime_type?: string | null;
   read_by_recipient: boolean;
   created_at: string;
 };
